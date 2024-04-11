@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>tutorial_ros</name>
+  <name>welcome_robot</name>
   <version>0.0.0</version>
-  <description>follow me for the course "Robotics and IoT"</description>
+  <description>welcome robot</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->

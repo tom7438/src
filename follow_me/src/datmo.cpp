@@ -263,7 +263,7 @@ void datmo::detect_a_moving_person() {
 
     if (nb_persons_detected > 0 && dynamicper > 0) {
         is_person_tracked = true;
-        pub_datmo.publish(person_tracked);
+        pub_person_position.publish(person_tracked);
         // Pour debug
         // ROS_INFO("person_tracked x : %f  y : %f", person_tracked.x, person_tracked.y);
     }
@@ -282,10 +282,11 @@ void datmo::track_a_person() {
     associated = false;
     float distance_min = uncertainty_max;
     int index_min;
+    
 
     int current_distance = 0;
 
-    geometry_msgs::Point reset;
+    geometry_msgs::Point reset, person_track;
 
     // association between the tracked person and the possible detection
     for (int loop_persons = 0; loop_persons < nb_persons_detected; loop_persons++) {
@@ -306,7 +307,7 @@ void datmo::track_a_person() {
         uncertainty = uncertainty_min;
         frequency++;
         //pub_datmo.publish(person_tracked);
-        pub_person_position(person_tracked);
+        pub_person_position.publish(person_tracked);
     } else {
         // update the information related to the person_tracked, frequency and uncertainty knowing that there is no association
         // should we publish or not person_tracked ?
@@ -322,7 +323,7 @@ void datmo::track_a_person() {
         reset.y = 0;
         person_tracked = reset;
         // Personne perdue
-        pub_person_position(person_tracked);
+        pub_person_position.publish(reset);
     }
 
     // do not forget to update person_tracked according to the current association

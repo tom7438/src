@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tutorial_ros)
+project(welcome_robot)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -14,6 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
   genmsg
   tf
 )
+
+set (CMAKE_BUILD_TYPE Debug)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -99,7 +101,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  ../follow_me/include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -109,22 +111,14 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(laser_text_display_node src/laser_text_display_node.cpp)
-add_executable(laser_graphical_display_node src/laser_graphical_display_node.cpp)
-add_executable(detect_motion_node src/detect_motion_node.cpp ../follow_me/src/datmo.cpp)
-add_executable(perform_clustering_node src/perform_clustering_node.cpp ../follow_me/src/datmo.cpp)
-add_executable(rotation_done_node src/rotation_done_node.cpp)
+add_executable(decision_welcome_robot_node src/decision_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(datmo_node datmo_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(laser_text_display_node ${catkin_LIBRARIES})
-target_link_libraries(laser_graphical_display_node ${catkin_LIBRARIES})
-target_link_libraries(detect_motion_node ${catkin_LIBRARIES})
-target_link_libraries(perform_clustering_node ${catkin_LIBRARIES})
-target_link_libraries(rotation_done_node ${catkin_LIBRARIES})
+target_link_libraries(decision_welcome_robot_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##

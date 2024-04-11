@@ -266,7 +266,9 @@ public:
             ROS_INFO("person_position: (%f, %f)", person_position.x, person_position.y);
             // TO COMPLETE:
             // Robair should rotate to face the person.
-            pub_rotation_to_do(rotation_to_person);
+            std_msgs::Float32 msg; 
+            msg.data = rotation_to_person;
+            pub_rotation_to_do.publish(msg);
             // TO COMPLETE:
             // if robair is facing the person and the person does not move during a while (use frequency), we switch to the state "moving_to_the_person"
             if (frequency == frequency_expected)
@@ -278,8 +280,9 @@ public:
         // what should robair do if it loses the moving person ?
         if (person_position.x == 0 && person_position.y == 0) {
             // Remettre le robot à l'orientation initiale
-            float new_orientation = current_orientation - base_orientation;
-            pub_rotation_to_do(-new_orientation);
+            std_msgs::Float32 new_orientation;
+            new_orientation.data = -1*(current_orientation - base_orientation);
+            pub_rotation_to_do.publish(new_orientation);
             current_state = waiting_for_a_person;
         }
     }
@@ -373,7 +376,7 @@ public:
 
             // Changement de repère pour la position de la base dans le repère du robot
 
-            base_position_robot.x = base_position.x - (current_position.x * cos(base_orientation);
+            base_position_robot.x = base_position.x - (current_position.x * cos(base_orientation));
             base_position_robot.y = base_position.y - (current_position.y * sin(base_orientation));
 
             translation_to_base = distancePoints(origin_position, base_position_robot);
@@ -384,8 +387,9 @@ public:
                     rotation_to_base *= -1;
             } else
                 rotation_to_base = 0;
-
-            pub_rotation_to_do.publish(rotation_to_base);
+            std_msgs::Float32 rota;
+            rota.data = rotation_to_base;
+            pub_rotation_to_do.publish(rota);
             if (current_orientation == previous_orientation)
                 frequency++;
             else
