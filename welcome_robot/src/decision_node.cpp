@@ -33,6 +33,7 @@ private:
     ros::Subscriber sub_person_position;
     bool new_person_position, person_tracked;
     geometry_msgs::Point person_position;
+    geometry_msgs::Point person_position_init;
 
     // communication with robot_moving_node
     ros::Subscriber sub_robot_moving;
@@ -226,6 +227,8 @@ public:
             ROS_INFO("press enter to continue");
             getchar();
             frequency = 0;
+            person_position_init.x = person_position.x;
+            person_position_init.y = person_position.y;
         }
 
         // Processing of the state
@@ -234,10 +237,15 @@ public:
             ROS_INFO("person_position: (%f, %f)", person_position.x, person_position.y);
             // TO COMPLETE:
             // if the moving person does not move for a certain time (use frequency), we should switch to the state "rotating_to_the_person".
-            if (frequency == frequency_expected)
-                current_state = rotating_to_the_person;
+            if (fabs(person_position.x - person_position.x) < 0.1 && fabs(person_position.y - person_position.y) < 0.1)
+                frequency++;
+            else
+                frequency = 0;
         } else
             frequency++;
+
+        if (frequency == frequency_expected)
+            current_state = rotating_to_the_person;
 
         // TO COMPLETE:
         // What should robair do if it loses the moving person ?

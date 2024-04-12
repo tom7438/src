@@ -306,7 +306,6 @@ void datmo::track_a_person() {
         person_tracked = person_detected[index_min];
         uncertainty = uncertainty_min;
         frequency++;
-        //pub_datmo.publish(person_tracked);
         pub_person_position.publish(person_tracked);
     } else {
         // update the information related to the person_tracked, frequency and uncertainty knowing that there is no association

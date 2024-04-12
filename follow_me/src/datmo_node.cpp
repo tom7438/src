@@ -73,9 +73,8 @@ void datmo::update()
 
         // Detect a person and track it in its field of view
         detect_a_moving_person();
-
-        //track_a_person();
-        //display_a_tracked_person();
+        track_a_person();
+        display_a_tracked_person();
 
         /*do not change this part*/
         populateMarkerReference();
