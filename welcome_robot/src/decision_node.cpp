@@ -269,6 +269,8 @@ public:
             std_msgs::Float32 msg; 
             msg.data = rotation_to_person;
             pub_rotation_to_do.publish(msg);
+            ROS_INFO("rotation to person : %f", rotation_to_person);
+            getchar();
             // TO COMPLETE:
             // if robair is facing the person and the person does not move during a while (use frequency), we switch to the state "moving_to_the_person"
             if (frequency == frequency_expected)

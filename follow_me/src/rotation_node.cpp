@@ -84,7 +84,7 @@ public:
         if (init_odom) {
 
              // we receive a new /rotation_to_do
-             ROS_INFO("\n\trotation_to_do = %d\n", rotation_to_do);
+             ROS_INFO("\n\trotation_to_do = %f\n", rotation_to_do);
              if (new_goal_to_reach)
                  init_rotation();
 
@@ -246,7 +246,10 @@ public:
 
         new_goal_to_reach = true;
         //goal_to_reach = *r;
-        rotation_to_do = r->data;
+        std_msgs::Float32 tmp;
+        tmp = *r;
+        rotation_to_do = tmp.data;
+        ROS_WARN("rotation_to_do dans callback = %f", rotation_to_do);
     }
 
     // Distance between two points
