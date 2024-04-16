@@ -24,6 +24,8 @@
 
 #define max_distance_to_person 0.5
 
+#define orientation_threshold 10
+
 class decision_node {
 private:
 
@@ -33,7 +35,6 @@ private:
     ros::Subscriber sub_person_position;
     bool new_person_position, person_tracked;
     geometry_msgs::Point person_position;
-    geometry_msgs::Point person_position_init;
 
     // communication with robot_moving_node
     ros::Subscriber sub_robot_moving;
@@ -55,17 +56,16 @@ private:
     float current_orientation;
     float translation_to_base;
     float rotation_to_base;
+    // Position de base dans le repère du robot
     geometry_msgs::Point local_base_position;
 
     int current_state, previous_state;
     int frequency;
+    // Position de base dans le repère de la map
     geometry_msgs::Point base_position;
     float base_orientation;
     geometry_msgs::Point origin_position;
     bool state_has_changed;
-
-    // Pour la position de la base dans le repère du robot
-    geometry_msgs::Point base_position_robot;
 
     float previous_orientation;
 
@@ -96,7 +96,7 @@ public:
         new_person_position = false;
         state_has_changed = false;
 
-        // TO COMPLETE:
+        // DONE
         // Define base_position coordinates according to the chosen base / initial position in the map frame.
         // Ici, (6, 4, 178) est la position de la base dans le repère de la carte
         base_position.x = 6;
@@ -129,7 +129,7 @@ public:
 
             update_variables();
 
-            // TO COMPLETE:
+            // DONE
             // DO NOT FORGET that if robair is too far from its base (ie, its distance to the base is higher than max_base_distance),
             // then robair should stop to interact with the moving person and go back to its base. Where should we implement this?
             switch (current_state) {
@@ -193,12 +193,25 @@ public:
         }
 
         if (new_localization) {
-            // TO COMPLETE:
+            // DONE
             // when we receive a new position(x, y, o) of robair in the map, we update:
             // translation_to_base: the translation that robair has to do to reach its base
             // rotation_to_base: the rotation that robair has to do to reach its base
             // local_base_position: the position of the base in the cartesian local frame of robot
+            float deltaX = base_position.x - current_position.x;
+            float deltaY = base_position.y - current_position.y;
 
+            local_base_position.x = (deltaX * cos(current_orientation)) + (deltaY * sin(current_orientation));
+            local_base_position.y = -(deltaX * sin(current_orientation)) + (deltaY * cos(current_orientation));
+
+            translation_to_base = distancePoints(origin_position, base_position_robot);
+
+            if (translation_to_base > 0) {
+                rotation_to_base = acos(base_position_robot.x / translation_to_base);
+                if (base_position_robot.y < 0)
+                    rotation_to_base *= -1;
+            } else
+                rotation_to_base = 0;
         }
 
     }
@@ -219,7 +232,7 @@ public:
 
     void process_observing_the_person() {
         // Initialization of the state
-        // TO COMPLETE:
+        // DONE
         // What should we store?
         if (state_has_changed) {
             ROS_INFO("current_state: observing_the_person");
@@ -227,27 +240,22 @@ public:
             ROS_INFO("press enter to continue");
             getchar();
             frequency = 0;
-            person_position_init.x = person_position.x;
-            person_position_init.y = person_position.y;
         }
 
         // Processing of the state
         // Robair only observes and tracks the moving person
         if (new_person_position) {
             ROS_INFO("person_position: (%f, %f)", person_position.x, person_position.y);
-            // TO COMPLETE:
+            // DONE
             // if the moving person does not move for a certain time (use frequency), we should switch to the state "rotating_to_the_person".
-            if (fabs(person_position.x - person_position.x) < 0.1 && fabs(person_position.y - person_position.y) < 0.1)
-                frequency++;
-            else
-                frequency = 0;
+            frequency = 0;
         } else
             frequency++;
 
         if (frequency == frequency_expected)
             current_state = rotating_to_the_person;
 
-        // TO COMPLETE:
+        // DONE
         // What should robair do if it loses the moving person ?
         // (prior to this, you should think about what happens when datmo_node loses the person,
         //  in order to determine how this node can understand that the person has been lost.
@@ -255,7 +263,7 @@ public:
 
         // Personne perdue
         if (person_position.x == 0 && person_position.y == 0)
-            current_state = waiting_for_a_person;
+            current_state = resetting_orientation; // Reset orientation
     }
 
     void process_rotating_to_the_person() {
@@ -272,28 +280,26 @@ public:
         // Robair rotates to be facing towards the moving person
         if (new_person_position) {
             ROS_INFO("person_position: (%f, %f)", person_position.x, person_position.y);
-            // TO COMPLETE:
+            // DONE
             // Robair should rotate to face the person.
-            std_msgs::Float32 msg; 
+            std_msgs::Float32 msg;
             msg.data = rotation_to_person;
             pub_rotation_to_do.publish(msg);
             ROS_INFO("rotation to person : %f", rotation_to_person);
-            getchar();
-            // TO COMPLETE:
-            // if robair is facing the person and the person does not move during a while (use frequency), we switch to the state "moving_to_the_person"
-            if (frequency == frequency_expected)
+            getchar("appuie sur entrée pour continuer");
+        } else {
+            // DONE
+            // if robair is facing the person and the ROBOT does not move during a while (use frequency and robot_moving boolean), we switch to the state "moving_to_the_person"
+            if (++frequency == frequency_expected && !robot_moving) {
                 current_state = moving_to_the_person;
-        } else
-            frequency++;
+            }
+        }
 
         // TO COMPLETE:
         // what should robair do if it loses the moving person ?
         if (person_position.x == 0 && person_position.y == 0) {
             // Remettre le robot à l'orientation initiale
-            std_msgs::Float32 new_orientation;
-            new_orientation.data = -1*(current_orientation - base_orientation);
-            pub_rotation_to_do.publish(new_orientation);
-            current_state = waiting_for_a_person;
+            current_state = resetting_orientation;
         }
     }
 
@@ -313,20 +319,28 @@ public:
             ROS_INFO("person_position: (%f, %f)", person_position.x, person_position.y);
             //TO COMPLETE
             // Robair should move towards the person_position
-            pub_goal_to_reach.publish(person_position);
-            //TO COMPLETE
-            // if robair is close to the moving person and the moving person does not move during a while (use frequency), we switch to the state "interacting_with_the_person"
-            if (distancePoints(current_position, person_position) < max_distance_to_person &&
-                frequency == frequency_expected)
-                current_state = interacting_with_the_person;
+            float distance = distancePoints(current_position, person_position);
+            if (distance > max_base_distance) {
+                ROS_INFO("distance entre la personne et la base : %f", distance);
+                // Le robot ne se déplace uniquement dans un rayon de max_base_distance de la base
+                ROS_INFO("La personne est trop loin de la base, le robot retourne à celle-ci");
+                current_state = rotating_to_the_base;
+            } else {
+                pub_goal_to_reach.publish(person_position);
+            }
         } else
             frequency++;
 
+        //TO COMPLETE
+        // if robair is close to the moving person and the moving person does not move during a while (use frequency), we switch to the state "interacting_with_the_person"
+        if (frequency == frequency_expected &&
+            distancePoints(current_position, person_position) < max_distance_to_person)
+            current_state = interacting_with_the_person;
+
         // TO COMPLETE
         // what should robair do if it loses the moving person ?
-        // TODO add borns to limit the mobility of the robot
         if (person_position.x == 0 && person_position.y == 0) {
-            current_state = rotation_to_base;
+            current_state = rotating_to_the_base;
         }
     }
 
@@ -346,10 +360,21 @@ public:
             ROS_INFO("person_position: (%f, %f)", person_position.x, person_position.y);
             // TO COMPLETE:
             // if the person goes away from robair, after a while (use frequency), we switch to the state "rotating_to_the_base"
-            if (distancePoints(current_position, person_position) > 2 && frequency == frequency_expected)
+            float current_distance = distancePoints(current_position, person_position);
+            if (current_distance > 2 && frequency == frequency_expected)
                 current_state = rotating_to_the_base;
-        } else
-            frequency++;
+            else if (current_distance > 0.5 && frequency < frequency_expected) {
+                current_state = rotating_to_the_person;
+            } else {
+                if (frequency < frequency_expected) {
+                    frequency++;
+                }
+            }
+        } else {
+            if (frequency < frequency_expected) {
+                frequency++;
+            }
+        }
 
         // TO COMPLETE:
         // what should robair do if it loses the moving person ?
@@ -374,7 +399,6 @@ public:
 
         previous_orientation = current_orientation;
 
-
         // Processing of the state
         // Robair rotates to be face to its base
         if (new_localization) {
@@ -382,27 +406,14 @@ public:
                      current_orientation * 180 / M_PI);
             //TO COMPLETE
             // robair should rotate to align with the base position (requires expressing base position in the robot / laser frame)
-            //pub_rotation_to_do.publish(base_position); -> changer de repère
-
-            // Changement de repère pour la position de la base dans le repère du robot
-
-            base_position_robot.x = base_position.x - (current_position.x * cos(base_orientation));
-            base_position_robot.y = base_position.y - (current_position.y * sin(base_orientation));
-
-            translation_to_base = distancePoints(origin_position, base_position_robot);
-
-            if (translation_to_base > 0) {
-                rotation_to_base = acos(base_position_robot.x / translation_to_base);
-                if (base_position_robot.y < 0)
-                    rotation_to_base *= -1;
-            } else
-                rotation_to_base = 0;
+            // Changement de repère -> update_variables()
             std_msgs::Float32 rota;
             rota.data = rotation_to_base;
             pub_rotation_to_do.publish(rota);
-            if (current_orientation == previous_orientation)
-                frequency++;
-            else
+            if (current_orientation == previous_orientation) {
+                if (frequency < frequency_expected)
+                    frequency++;
+            } else
                 frequency = 0;
             //TO COMPLETE
             // if robair is face to its base and does not move, after a while (use frequency), we switch to the state "moving_to_the_base"
@@ -433,10 +444,15 @@ public:
                      current_orientation * 180 / M_PI);
             //TO COMPLETE:
             // robair should move towards the base point (requires expressing base position in robair frame)
-
-
+            pub_goal_to_reach.publish(local_base_position);
             // TO COMPLETE:
             // if robair is close to its base and does not move, after a while (use frequency), we switch to the state "resetting_orientation"
+            if (distancePoints(current_position, base_position) < 0.1 && frequency == frequency_expected)
+                current_state = resetting_orientation;
+            else if (distancePoints(current_position, base_position) < 0.1 && frequency < frequency_expected)
+                frequency++;
+            else
+                frequency = 0;
         }
 
     }
@@ -457,11 +473,27 @@ public:
         if (new_localization) {
             ROS_INFO("position of robair in the map: (%f, %f, %f)", current_position.x, current_position.y,
                      current_orientation * 180 / M_PI);
-            //TO COMPLETE:
+            // DONE
             // robair should rotate to face the initial orientation
-
-            //TO COMPLETE
+            std_msgs::Float32 rota;
+            float rotation = current_orientation - base_orientation;
+            if ((fabs(rotation * 180 / M_PI) > orientation_threshold)) {
+                if (rotation > M_PI)
+                    rotation -= 2 * M_PI;
+                else if (rotation < -M_PI)
+                    rotation += 2 * M_PI;
+                rota.data = rotation;
+                pub_rotation_to_do.publish(rota);
+            }
+            // DONE
             // if robair is close to its initial orientation and does not move, after a while (use frequency), we switch to the state "waiting_for_a_person"
+            if ((fabs(rotation * 180 / M_PI) <= orientation_threshold))
+                if(frequency < frequency_expected)
+                    frequency++;
+                else
+                    current_state = waiting_for_a_person;
+            else
+                frequency = 0;
         }
 
     }
@@ -472,10 +504,12 @@ public:
     void person_positionCallback(const geometry_msgs::Point::ConstPtr &g) {
 // process the goal received from moving_persons detector
 
-        new_person_position = true;
+        // New person if distance x or y > 0.1
+        if (fabs(person_position.x, g->x) > 0.1 || fabs(person_position.y, g->y) > 0.1) {
+            new_person_position = true;
+        }
         person_position.x = g->x;
         person_position.y = g->y;
-
     }
 
     void robot_movingCallback(const std_msgs::Bool::ConstPtr &state) {

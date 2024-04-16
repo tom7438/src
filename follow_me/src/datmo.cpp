@@ -261,6 +261,8 @@ void datmo::detect_a_moving_person() {
         }
     }
 
+    frequency = frequency_init;
+
     if (nb_persons_detected > 0 && dynamicper > 0) {
         is_person_tracked = true;
         pub_person_position.publish(person_tracked);
@@ -282,7 +284,7 @@ void datmo::track_a_person() {
     associated = false;
     float distance_min = uncertainty_max;
     int index_min;
-    
+
 
     int current_distance = 0;
 
@@ -305,18 +307,21 @@ void datmo::track_a_person() {
         // should we publish or not person_tracked ?
         person_tracked = person_detected[index_min];
         uncertainty = uncertainty_min;
-        frequency++;
+        if (frequency < frequency_max)
+            frequency++;
         pub_person_position.publish(person_tracked);
     } else {
         // update the information related to the person_tracked, frequency and uncertainty knowing that there is no association
         // should we publish or not person_tracked ?
         uncertainty += uncertainty_inc;
+        if (uncertainty < uncertainty_max)
+            uncertainty += uncertainty_inc;
         frequency--;
     }
 
     if (frequency == 0) {
         is_person_tracked = false;
-        frequency = 1;
+        frequency = frequency_init;
         uncertainty = uncertainty_min;
         reset.x = 0;
         reset.y = 0;

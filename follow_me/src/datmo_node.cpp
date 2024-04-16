@@ -3,12 +3,10 @@
 // UPDATE
 /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-void datmo::update()
-{
+void datmo::update() {
 
     // we wait for new data of the laser and of the robot_moving_node to perform laser processing
-    if (new_laser && new_robot)
-    {
+    if (new_laser && new_robot) {
 
         ROS_INFO("\n");
         ROS_INFO("New data of laser received");
@@ -16,37 +14,28 @@ void datmo::update()
 
         // insert the functions: store_background, reset_motion and detect_motion
         // if the robot is not moving then we can perform moving person detection
-        if (!current_robot_moving)
-        {
+        if (!current_robot_moving) {
             ROS_INFO("robot is not moving");
 
             // if the robot is not moving then we can perform moving person detection
             // DO NOT FORGET to store the background but when ???
-            if (previous_robot_moving)
-            {
+            if (previous_robot_moving) {
                 ROS_INFO("robot was moving");
                 reset_motion();
                 store_background();
-            }
-            else
-            {
+            } else {
                 ROS_INFO("robot was not moving");
                 detect_motion();
             }
-        }
-        else
-        {
+        } else {
             ROS_INFO("robot is moving");
 
             // IMPOSSIBLE TO DETECT MOTIONS because the base is moving
             // what is the value of dynamic table for each hit of the laser ?
-            if (!previous_robot_moving)
-            {
+            if (!previous_robot_moving) {
                 ROS_INFO("robot was not moving");
                 reset_motion();
-            }
-            else
-            {
+            } else {
                 ROS_INFO("robot was moving");
             }
         }
@@ -72,8 +61,11 @@ void datmo::update()
         // When do we do detection and when do we do tracking ?
 
         // Detect a person and track it in its field of view
-        detect_a_moving_person();
-        track_a_person();
+        if (!is_person_tracked) {
+            detect_a_moving_person();
+        } else {
+            track_a_person();
+        }
         display_a_tracked_person();
 
         /*do not change this part*/
@@ -81,9 +73,7 @@ void datmo::update()
         new_laser = false;
         new_robot = false;
         previous_robot_moving = current_robot_moving;
-    }
-    else
-    {
+    } else {
         if (!init_laser)
             ROS_WARN("waiting for laser data: run a rosbag");
         else if (!init_robot)
@@ -92,8 +82,7 @@ void datmo::update()
 
 } // update
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 
     ros::init(argc, argv, "detection_node");
 
