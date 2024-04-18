@@ -204,11 +204,11 @@ public:
             local_base_position.x = (deltaX * cos(current_orientation)) + (deltaY * sin(current_orientation));
             local_base_position.y = -(deltaX * sin(current_orientation)) + (deltaY * cos(current_orientation));
 
-            translation_to_base = distancePoints(origin_position, base_position_robot);
+            translation_to_base = distancePoints(origin_position, local_base_position);
 
             if (translation_to_base > 0) {
-                rotation_to_base = acos(base_position_robot.x / translation_to_base);
-                if (base_position_robot.y < 0)
+                rotation_to_base = acos(local_base_position.x / translation_to_base);
+                if (local_base_position.y < 0)
                     rotation_to_base *= -1;
             } else
                 rotation_to_base = 0;
@@ -394,9 +394,6 @@ public:
             frequency = 0;
         }
 
-        origin_position.x = current_position.x;
-        origin_position.y = current_position.y;
-
         previous_orientation = current_orientation;
 
         // Processing of the state
@@ -434,9 +431,6 @@ public:
             frequency = 0;
         }
 
-        origin_position.x = current_position.x;
-        origin_position.y = current_position.y;
-
         // Processing of the state
         // Robair moves to its base
         if (new_localization) {
@@ -447,12 +441,15 @@ public:
             pub_goal_to_reach.publish(local_base_position);
             // TO COMPLETE:
             // if robair is close to its base and does not move, after a while (use frequency), we switch to the state "resetting_orientation"
-            if (distancePoints(current_position, base_position) < 0.1 && frequency == frequency_expected)
-                current_state = resetting_orientation;
-            else if (distancePoints(current_position, base_position) < 0.1 && frequency < frequency_expected)
-                frequency++;
-            else
+            if (distancePoints(current_position, base_position) < 0.1 && frequency == frequency_expected) {
+                if (frequency < frequency_expected) {
+                    frequency++;
+                } else {
+                    current_state = resetting_orientation;
+                }
+            } else {
                 frequency = 0;
+            }
         }
 
     }
@@ -487,13 +484,15 @@ public:
             }
             // DONE
             // if robair is close to its initial orientation and does not move, after a while (use frequency), we switch to the state "waiting_for_a_person"
-            if ((fabs(rotation * 180 / M_PI) <= orientation_threshold))
-                if(frequency < frequency_expected)
+            if ((fabs(rotation * 180 / M_PI) <= orientation_threshold)) {
+                if (frequency < frequency_expected) {
                     frequency++;
-                else
+                } else {
                     current_state = waiting_for_a_person;
-            else
+                }
+            } else {
                 frequency = 0;
+            }
         }
 
     }
