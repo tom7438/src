@@ -505,7 +505,7 @@ public:
 // process the goal received from moving_persons detector
 
         // New person if distance > 0.1
-        if (distancePoints(person_position, g) > 0.1) {
+        if (distancePoints(person_position, *g) > 0.1) {
             new_person_position = true;
         }
         person_position.x = g->x;
