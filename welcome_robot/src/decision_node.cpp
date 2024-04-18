@@ -504,8 +504,8 @@ public:
     void person_positionCallback(const geometry_msgs::Point::ConstPtr &g) {
 // process the goal received from moving_persons detector
 
-        // New person if distance x or y > 0.1
-        if (distancePoints(person_position.x, g->x) > 0.1 || distancePoints(person_position.y, g->y) > 0.1) {
+        // New person if distance > 0.1
+        if (distancePoints(person_position, g) > 0.1) {
             new_person_position = true;
         }
         person_position.x = g->x;
