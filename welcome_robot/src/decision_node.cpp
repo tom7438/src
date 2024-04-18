@@ -286,7 +286,8 @@ public:
             msg.data = rotation_to_person;
             pub_rotation_to_do.publish(msg);
             ROS_INFO("rotation to person : %f", rotation_to_person);
-            getchar("appuie sur entrée pour continuer");
+            ROS_INFO("appuyer sur entrée pour continuer");
+            getchar();
         } else {
             // DONE
             // if robair is facing the person and the ROBOT does not move during a while (use frequency and robot_moving boolean), we switch to the state "moving_to_the_person"
@@ -504,7 +505,7 @@ public:
 // process the goal received from moving_persons detector
 
         // New person if distance x or y > 0.1
-        if (fabs(person_position.x, g->x) > 0.1 || fabs(person_position.y, g->y) > 0.1) {
+        if (distancePoints(person_position.x, g->x) > 0.1 || distancePoints(person_position.y, g->y) > 0.1) {
             new_person_position = true;
         }
         person_position.x = g->x;
