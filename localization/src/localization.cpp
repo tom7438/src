@@ -26,6 +26,7 @@ localization::localization() {
     init_laser = false;
     init_position = false;
     localization_initialized = false;
+    score_max = 0;
 
     width_max = resp.map.info.width;
     height_max = resp.map.info.height;
@@ -54,8 +55,8 @@ void localization::initialize_localization() {
 
     estimated_position = initial_position;
     estimated_orientation = initial_orientation;
-    ROS_INFO("initial_position(%f, %f, %f): score = %i", initial_position.x, initial_position.y,
-             initial_orientation * 180 / M_PI, score_max);
+    // ROS_INFO("initial_position(%f, %f, %f): score = %i", initial_position.x, initial_position.y,
+    //          initial_orientation * 180 / M_PI, score_max);
     reset_display();
     display_localization(initial_position, initial_orientation);
     display_markers();
@@ -66,16 +67,16 @@ void localization::initialize_localization() {
     min_y = initial_position.y - 1;
     max_y = initial_position.y + 1;
     // we search the position with the highest sensor_model in a square of 2x2 meters around the initial_position and with all possible orientations
-    ROS_INFO("possible positions to tests: (%f, %f) -> (%f, %f)", min_x, min_y, max_x, max_y);
+    // ROS_INFO("possible positions to tests: (%f, %f) -> (%f, %f)", min_x, min_y, max_x, max_y);
     find_best_position(min_x, max_x, min_y, max_y, -M_PI, M_PI);
 
-    ROS_INFO("initialize localization done");
+    // ROS_INFO("initialize localization done");
 } // initialize_localization
 
 void localization::predict_position() {
     // NOTHING TO DO HERE for the students
 
-    ROS_INFO("predict_position");
+    // ROS_INFO("predict_position");
 
     odom_last = odom_current;
     odom_last_orientation = odom_current_orientation;
@@ -90,17 +91,17 @@ void localization::predict_position() {
     predicted_position.x = estimated_position.x + distance_traveled * cos(predicted_orientation);
     predicted_position.y = estimated_position.y + distance_traveled * sin(predicted_orientation);
 
-    ROS_INFO("predict_position done");
+    // ROS_INFO("predict_position done");
 }
 
 void localization::estimate_position() {
 
-    ROS_INFO("estimate_position");
+    // ROS_INFO("estimate_position");
 
-    ROS_INFO("previous position: (%f, %f, %f)", estimated_position.x, estimated_position.y,
-             estimated_orientation * 180 / M_PI);
-    ROS_INFO("predicted position(%f, %f, %f): score = %i", predicted_position.x, predicted_position.y,
-             predicted_orientation * 180 / M_PI, score_max);
+    // ROS_INFO("previous position: (%f, %f, %f)", estimated_position.x, estimated_position.y,
+    //          estimated_orientation * 180 / M_PI);
+    // ROS_INFO("predicted position(%f, %f, %f): score = %i", predicted_position.x, predicted_position.y,
+    //          predicted_orientation * 180 / M_PI, score_max);
 
     estimated_position = predicted_position;
     estimated_orientation = predicted_orientation;
@@ -116,19 +117,21 @@ void localization::estimate_position() {
     min_orientation = predicted_orientation - M_PI / 6;
     max_orientation = predicted_orientation + M_PI / 6;
     // we search the position with the highest sensor_model in a square of 1x1 meter around the predicted_position and with orientations around the predicted_orientation -M_PI/6 and +M_PI/6
-    ROS_INFO("possible positions to tests: (%f, %f, %f) -> (%f, %f, %f)", min_x, min_y, min_orientation, max_x, max_y,
-             max_orientation);
+    // ROS_INFO("possible positions to tests: (%f, %f, %f) -> (%f, %f, %f)", min_x, min_y, min_orientation, max_x, max_y,
+    //          max_orientation);
     find_best_position(min_x, max_x, min_y, max_y, min_orientation, max_orientation);
 
-    ROS_INFO("estimate_position done");
+    // ROS_INFO("estimate_position done");
 }
 
 void localization::find_best_position(float min_x, float max_x, float min_y, float max_y, float min_orientation,
                                       float max_orientation) {
 
-    ROS_INFO("find_best_position");
+    // ROS_INFO("find_best_position");
     odom_last = odom_current;
     odom_last_orientation = odom_current_orientation;
+
+    score_max = 0;
 
     // loop over all the possible positions (x, y, theta) {
     //  *  * the increment on x and y is of 5cms and on theta is of 5 degrees
@@ -137,12 +140,13 @@ void localization::find_best_position(float min_x, float max_x, float min_y, flo
             for (float loop_o = min_orientation; loop_o < max_orientation; loop_o += (5 * M_PI / 180)) {
                 if (cell_value(loop_x, loop_y) == 0) { // robair can only be at a free cell
                     int score_current = sensor_model(loop_x, loop_y, loop_o);
-                    ROS_INFO("(%f, %f, %f): score = %i", loop_x, loop_y, loop_o * 180 / M_PI, score_current);
+                    // ROS_INFO("(%f, %f, %f): score = %i", loop_x, loop_y, loop_o * 180 / M_PI, score_current);
                     // we store the maximum score over all the possible positions in estimated_position and score_max
                     if (score_current > score_max) {
                         estimated_position.x = loop_x;
                         estimated_position.y = loop_y;
                         estimated_orientation = loop_o;
+                        estimated_position.z = estimated_orientation;
                         score_max = score_current;
                         reset_display();
                         display_localization(estimated_position, estimated_orientation);
@@ -152,7 +156,7 @@ void localization::find_best_position(float min_x, float max_x, float min_y, flo
             }
         }
     }
-    ROS_INFO("best_position found");
+    // ROS_INFO("best_position found");
     ROS_INFO("best_position : (%f, %f, %f)\nScore de la meilleure position : %d\nMeilleur score possible : %d\n",
              estimated_position.x, estimated_position.y, estimated_orientation * 180 / M_PI, score_max, score_total);
     // Publish for notify decision_node
@@ -164,7 +168,7 @@ int localization::sensor_model(float x, float y, float o) {
     // for each hit of the laser, we compute its position in the map and check if it is occupied or not
     float uncertainty = 0.05;
 
-    ROS_INFO("compute_score");
+    // ROS_INFO("compute_score");
     // nb_pts = 0;
     int score_current = 0;
     float beam_angle = angle_min;
@@ -186,8 +190,8 @@ int localization::sensor_model(float x, float y, float o) {
             score_current++;
     }
 
-    ROS_INFO("score_current = %i", score_current);
-    ROS_INFO("done");
+    // ROS_INFO("score_current = %i", score_current);
+    // ROS_INFO("done");
 
     return (score_current);
 }

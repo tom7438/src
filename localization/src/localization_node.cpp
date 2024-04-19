@@ -22,13 +22,13 @@ void localization::update() {
             angle_traveled -= 2 * M_PI;
 
         if ((distance_traveled != previous_distance_traveled) || (angle_traveled != previous_angle_traveled))
-            ROS_INFO("distance_traveled = %f, angle_traveled = %f since last localization", distance_traveled,
-                     angle_traveled * 180 / M_PI);
+            // ROS_INFO("distance_traveled = %f, angle_traveled = %f since last localization", distance_traveled,
+            //          angle_traveled * 180 / M_PI);
 
-        if ((distance_traveled > distance_to_travel) || (fabs(angle_traveled * 180 / M_PI) > angle_to_travel)) {
-            predict_position();
-            estimate_position();
-        }
+            if ((distance_traveled > distance_to_travel) || (fabs(angle_traveled * 180 / M_PI) > angle_to_travel)) {
+                predict_position();
+                estimate_position();
+            }
     }
 
 }// update
@@ -43,5 +43,3 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-
-

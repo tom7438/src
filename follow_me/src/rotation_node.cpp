@@ -83,10 +83,10 @@ public:
 
         if (init_odom) {
 
-             // we receive a new /rotation_to_do
-             ROS_INFO("\n\trotation_to_do = %f\n", rotation_to_do);
-             if (new_goal_to_reach)
-                 init_rotation();
+            // we receive a new /rotation_to_do
+            ROS_INFO("\n\trotation_to_do = %f\n", rotation_to_do);
+            if (new_goal_to_reach)
+                init_rotation();
 
             // we are performing a rotation
             if (cond_rotation) {
@@ -140,45 +140,45 @@ public:
         error_previous_rotation = 0;
 
         // ROS_INFO("rotation_to_do: %f, translation_to_do: %f", rotation_to_do*180/M_PI, translation_to_do);
-        if (cond_rotation)
-            ROS_WARN("rotation_to_do: %f", rotation_to_do * 180 / M_PI);
+        // if (cond_rotation)
+        //     ROS_WARN("rotation_to_do: %f", rotation_to_do * 180 / M_PI);
     } // init_rotation
 
     void compute_rotation() {
 
-        ROS_INFO("current_orientation: %f, initial_orientation: %f", current_orientation * 180 / M_PI,
-                 initial_orientation * 180 / M_PI);
+        // ROS_INFO("current_orientation: %f, initial_orientation: %f", current_orientation * 180 / M_PI,
+        //          initial_orientation * 180 / M_PI);
 
         rotation_done = current_orientation - initial_orientation;
 
         // do not forget that rotation_done must always be between -M_PI and +M_PI
         if (rotation_done > M_PI) {
-            ROS_WARN("rotation_done > 180 degrees: %f degrees -> %f degrees", rotation_done * 180 / M_PI,
-                     (rotation_done - 2 * M_PI) * 180 / M_PI);
+            // ROS_WARN("rotation_done > 180 degrees: %f degrees -> %f degrees", rotation_done * 180 / M_PI,
+            //          (rotation_done - 2 * M_PI) * 180 / M_PI);
             rotation_done -= 2 * M_PI;
         } else if (rotation_done < -M_PI) {
-            ROS_WARN("rotation_done < -180 degrees: %f degrees -> %f degrees", rotation_done * 180 / M_PI,
-                     (rotation_done + 2 * M_PI) * 180 / M_PI);
+            // ROS_WARN("rotation_done < -180 degrees: %f degrees -> %f degrees", rotation_done * 180 / M_PI,
+            //          (rotation_done + 2 * M_PI) * 180 / M_PI);
             rotation_done += 2 * M_PI;
         }
 
         error_rotation = rotation_to_do - rotation_done;
-        ROS_INFO("rotation_done : %f", rotation_done);
+        // ROS_INFO("rotation_done : %f", rotation_done);
         // do not forget that error_rotation must always be between -M_PI and +M_PI
         if (error_rotation > M_PI) {
-            ROS_WARN("error_rotation_done > 180 degrees: %f degrees -> %f degrees", error_rotation * 180 / M_PI,
-                     (error_rotation - 2 * M_PI) * 180 / M_PI);
+            // ROS_WARN("error_rotation_done > 180 degrees: %f degrees -> %f degrees", error_rotation * 180 / M_PI,
+            //          (error_rotation - 2 * M_PI) * 180 / M_PI);
             error_rotation -= 2 * M_PI;
         } else if (error_rotation < -M_PI) {
-            ROS_WARN("error_rotation < -180 degrees: %f degrees -> %f degrees", error_rotation * 180 / M_PI,
-                     (error_rotation + 2 * M_PI) * 180 / M_PI);
+            // ROS_WARN("error_rotation < -180 degrees: %f degrees -> %f degrees", error_rotation * 180 / M_PI,
+            //          (error_rotation + 2 * M_PI) * 180 / M_PI);
             error_rotation += 2 * M_PI;
         }
 
         // cond_rotation = ...; cond_rotation is used to control if we stop or not the pid TO COMPLETE. take care that rotation_to_do could be negative
         cond_rotation = (fabs(error_rotation) > error_rotation_threshold);
-        ROS_INFO("rotation_to_do: %f, rotation_done: %f, error_rotation: %f, cond_rotation: %i",
-                 rotation_to_do * 180 / M_PI, rotation_done * 180 / M_PI, error_rotation * 180 / M_PI, cond_rotation);
+        // ROS_INFO("rotation_to_do: %f, rotation_done: %f, error_rotation: %f, cond_rotation: %i",
+        //          rotation_to_do * 180 / M_PI, rotation_done * 180 / M_PI, error_rotation * 180 / M_PI, cond_rotation);
 
         rotation_speed = 0;
         if (cond_rotation) {
@@ -186,15 +186,15 @@ public:
 
             float error_derivation_rotation = error_previous_rotation - error_rotation;
             error_previous_rotation = error_rotation;
-            ROS_INFO("error_derivation_rotation: %f", error_derivation_rotation);
+            // ROS_INFO("error_derivation_rotation: %f", error_derivation_rotation);
 
             error_integral_rotation += error_rotation;
-            ROS_INFO("error_integral_rotation: %f", error_integral_rotation);
+            // ROS_INFO("error_integral_rotation: %f", error_integral_rotation);
 
             // control of rotation with a PID controller
             rotation_speed =
                     (kpr * error_rotation) + (kir * error_integral_rotation) + (kdr * error_derivation_rotation);
-            ROS_WARN("rotation_speed: %f", rotation_speed * 180 / M_PI);
+            // ROS_WARN("rotation_speed: %f", rotation_speed * 180 / M_PI);
             //getchar();
         } else
             ROS_WARN("pid of rotation will stop");
