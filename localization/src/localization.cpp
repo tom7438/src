@@ -109,19 +109,27 @@ void localization::estimate_position() {
     display_localization(predicted_position, predicted_orientation);
     display_markers();
 
-    float min_x, max_x, min_y, max_y, min_orientation, max_orientation;
-    min_x = predicted_position.x - 0.5;
-    max_x = predicted_position.x + 0.5;
-    min_y = predicted_position.y - 0.5;
-    max_y = predicted_position.y + 0.5;
-    min_orientation = predicted_orientation - M_PI / 6;
-    max_orientation = predicted_orientation + M_PI / 6;
-    // we search the position with the highest sensor_model in a square of 1x1 meter around the predicted_position and with orientations around the predicted_orientation -M_PI/6 and +M_PI/6
-    // ROS_INFO("possible positions to tests: (%f, %f, %f) -> (%f, %f, %f)", min_x, min_y, min_orientation, max_x, max_y,
-    //          max_orientation);
-    find_best_position(min_x, max_x, min_y, max_y, min_orientation, max_orientation);
+    // Si distance <= 3m && angle de rotation <= 90 degres
+    if ((distance_traveled <= 3) && (fabs(angle_traveled * 180 / M_PI) <= 90)) {
+        // publish predicted
+        predicted_position.z = predicted_orientation;
+        pub_localization.publish(predicted_position);
+    } else {
 
-    // ROS_INFO("estimate_position done");
+        float min_x, max_x, min_y, max_y, min_orientation, max_orientation;
+        min_x = predicted_position.x - 0.5;
+        max_x = predicted_position.x + 0.5;
+        min_y = predicted_position.y - 0.5;
+        max_y = predicted_position.y + 0.5;
+        min_orientation = predicted_orientation - M_PI / 6;
+        max_orientation = predicted_orientation + M_PI / 6;
+        // we search the position with the highest sensor_model in a square of 1x1 meter around the predicted_position and with orientations around the predicted_orientation -M_PI/6 and +M_PI/6
+        // ROS_INFO("possible positions to tests: (%f, %f, %f) -> (%f, %f, %f)", min_x, min_y, min_orientation, max_x, max_y,
+        //          max_orientation);
+        find_best_position(min_x, max_x, min_y, max_y, min_orientation, max_orientation);
+
+        // ROS_INFO("estimate_position done");
+    }
 }
 
 void localization::find_best_position(float min_x, float max_x, float min_y, float max_y, float min_orientation,
