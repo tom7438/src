@@ -98,7 +98,7 @@ public:
     } // update
 
     void init_rotation() {
-
+        initial_orientation = current_orientation;
         /*initial_orientation = current_orientation;
         error_rotation = 0;
         error_integral_rotation = 0;
@@ -181,6 +181,7 @@ public:
         //          rotation_to_do * 180 / M_PI, rotation_done * 180 / M_PI, error_rotation * 180 / M_PI, cond_rotation);
 
         rotation_speed = 0;
+        ROS_WARN("cond rotation = %d\n", cond_rotation);
         if (cond_rotation) {
             // Implementation of a PID controller for rotation_to_do;
 
@@ -250,6 +251,7 @@ public:
         tmp = *r;
         rotation_to_do = tmp.data;
         ROS_WARN("rotation_to_do dans callback = %f", rotation_to_do);
+        //getchar();
     }
 
     // Distance between two points

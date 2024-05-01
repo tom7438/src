@@ -24,8 +24,8 @@
 using namespace std;
 
 #define angle_resolution 5//in degrees
-#define distance_to_travel 1
-#define angle_to_travel 10
+#define distance_to_travel 0.25
+#define angle_to_travel 5
 
 class localization {
 
